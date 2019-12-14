@@ -1,0 +1,32 @@
+{
+    "_workspace": [
+        "$HOME/workspace/avr",
+        "$HOME/workspace/kicad",
+        "$HOME/workspace/python",
+        "$HOME/workspace/stm8",
+        "$HOME/workspace/stm32",
+        "$HOME/workspace/rust"
+    ],
+    "workspace": [
+        "$HOME/workspace/rust",
+        "$HOME/workspace/test"
+    ],
+    "prefix": [
+        "TODO",
+        "FIXME"
+    ],
+    "comment_symbol": [
+        "//",
+        "#"
+    ],
+    "outfile": {
+        "name": "TODO_TEST",
+        "format": "md"
+    },
+    "ignored": [
+        "target",
+        "output",
+        "build",
+        "settings.json"
+    ]
+}
