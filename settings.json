@@ -1,12 +1,4 @@
 {
-    "_workspace": [
-        "$HOME/workspace/avr",
-        "$HOME/workspace/kicad",
-        "$HOME/workspace/python",
-        "$HOME/workspace/stm8",
-        "$HOME/workspace/stm32",
-        "$HOME/workspace/rust"
-    ],
     "workspace": [
         "$HOME/workspace/rust"
     ],
