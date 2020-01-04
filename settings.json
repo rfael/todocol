@@ -8,8 +8,7 @@
         "$HOME/workspace/rust"
     ],
     "workspace": [
-        "$HOME/workspace/rust",
-        "$HOME/workspace/test"
+        "$HOME/workspace/rust"
     ],
     "prefix": [
         "TODO",
@@ -19,14 +18,19 @@
         "//",
         "#"
     ],
-    "outfile": {
-        "name": "TODO_TEST",
-        "format": "md"
-    },
-    "ignored": [
+    "source_extension": [
+        ".c",
+        ".sh",
+        ".py",
+        ".rs"
+    ],
+    "outfile.name": "TODO",
+    "outfile.format": "markdown",
+    "ignore": [
         "target",
         "output",
         "build",
-        "settings.json"
+        "settings.json",
+        "collector.old"
     ]
 }

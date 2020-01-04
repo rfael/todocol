@@ -1,47 +1,60 @@
-use log::error;
+use log::warn;
+
+use super::Comment;
 
 #[derive(Debug, PartialEq)]
 pub enum FileFormat {
     Raw,
     Markdown,
-    Json,
 }
 
 impl FileFormat {
-    pub fn from(t: &str) -> Self {
-        match &t.to_string().to_lowercase()[..] {
-            "raw" | "txt" => Self::Raw,
-            "json" => Self::Json,
-            "markdown" | "md" => Self::Markdown,
-            t => {
-                error!("Outfile type {} not supported, using 'raw' type instead", t);
-                Self::default()
-            }
+    pub fn extension(&self) -> &'static str {
+        match self {
+            FileFormat::Raw => "txt",
+            FileFormat::Markdown => "md",
         }
     }
 
-    pub fn format_with_extension(&self) -> (Self, &'static str) {
+    pub fn as_str(&self) -> &'static str {
         match self {
-            Self::Raw => (Self::Raw, "txt"),
-            Self::Json => (Self::Json, "json"),
-            Self::Markdown => (Self::Markdown, "md"),
+            FileFormat::Raw => "Raw",
+            FileFormat::Markdown => "Markdown",
         }
     }
 
-    pub fn file_preamble(&self, title: &str) -> String {
+    pub fn format_comments(&self, header: &str, comments: &[Comment]) -> String {
         match self {
-            Self::Raw => format!("{}:", title),
-            Self::Json => format!("{{\"{}\":[", title),
-            Self::Markdown => format!("### {}", title),
+            FileFormat::Raw => Self::format_comments_raw(header, comments),
+            FileFormat::Markdown => Self::format_comments_markdown(header, comments),
         }
     }
 
-    pub fn file_ending(&self) -> String {
-        match self {
-            Self::Raw => String::new(),
-            Self::Json => String::from("]}"),
-            Self::Markdown => String::new(),
+    fn format_comments_raw(header: &str, comments: &[Comment]) -> String {
+        let mut result = format!("{}:\n", header);
+
+        for c in comments {
+            let comment_line = format!("- {}:{} - {}\n", c.source(), c.line_num(), c.content());
+            result.push_str(&comment_line)
         }
+
+        result
+    }
+
+    fn format_comments_markdown(header: &str, comments: &[Comment]) -> String {
+        let mut result = format!("### {}\n", header);
+
+        for c in comments {
+            let comment_line = if let Some(pos) = c.source().find(header) {
+                let (_, relative_path) = c.source().split_at(pos);
+                format!("* [{}]({}):{} - {} \n", relative_path, c.source(), c.line_num(), c.content())
+            } else {
+                format!("* [file]({}):{} - {} \n", c.source(), c.line_num(), c.content())
+            };
+            result.push_str(&comment_line)
+        }
+
+        result
     }
 }
 
@@ -51,12 +64,18 @@ impl Default for FileFormat {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::FileFormat;
-    #[test]
-    fn outfile_format_from() {
-        assert_eq!(FileFormat::Raw, FileFormat::from("raW"));
-        assert_eq!(FileFormat::Json, FileFormat::from("JsOn"));
+impl From<&str> for FileFormat {
+    fn from(format: &str) -> Self {
+        match format.to_string().to_lowercase().as_ref() {
+            "raw" | "txt" => Self::Raw,
+            "markdown" | "md" => Self::Markdown,
+            f => {
+                warn!("Outfile format '{}' not supported, using default instead", f);
+                Self::default()
+            }
+        }
     }
 }
+
+#[cfg(test)]
+mod tests {}

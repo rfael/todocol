@@ -3,7 +3,7 @@ name = "todocol"
 version = "0.1.0"
 authors = ["Rafal Ulko <rafal.ulko@gmail.com>"]
 edition = "2018"
-description = "App is collecting 'TODO:' (or other) comments from project source files into one file"
+description = "App to collecting 'TODO:' (or other) comments from project source files into one file"
 
 [dependencies]
 log = "0.4"
@@ -12,4 +12,3 @@ clap = "2.33.0"
 config = "0.10.1"
 simple-error = "0.2.1"
 shellexpand = "1.0.0"
-# tokio = { version = "0.2.4", features = ["full"] }

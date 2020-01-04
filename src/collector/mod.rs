@@ -1,299 +1,309 @@
 mod comment;
 mod fileformat;
-mod todofile;
 
-use log::{debug, error, info};
-use std::ffi::OsStr;
-use std::fs;
-use std::fs::{DirEntry, File};
+use log::{debug, error, info, warn};
+use simple_error::SimpleError;
+use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 
-use crate::path_as_str;
-use crate::simple_error_result;
-use comment::CommentLine;
-use todofile::todofiles_collector;
-use todofile::Todofile;
-
+pub use comment::Comment;
 pub use fileformat::FileFormat;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct TodoCollector {
     prefixes: Vec<String>,
     comment_symbols: Vec<String>,
+    source_extensions: Vec<String>,
     outfile_name: String,
     outfile_format: FileFormat,
-    ignored: Vec<String>,
+    ignore: Vec<String>,
+    source_files: Vec<PathBuf>,
+    outfile: PathBuf,
+    comments: Vec<Comment>,
+    project_name: String,
 }
+
+// TODO: use comment symbols associated witch extension
 
 impl TodoCollector {
     pub fn new() -> Self {
-        Self::default()
+        Self {
+            prefixes: vec!["TODO".into()],
+            comment_symbols: vec!["//".into()],
+            source_extensions: vec![".rs".into()],
+            outfile_name: String::from("TODO"),
+            outfile_format: FileFormat::default(),
+            ignore: Vec::new(),
+            source_files: Vec::new(),
+            outfile: PathBuf::default(),
+            comments: Vec::new(),
+            project_name: String::default(),
+        }
     }
 
     pub fn set_prefixes(&mut self, prefixes: Vec<String>) {
-        self.prefixes = prefixes
+        if !prefixes.is_empty() {
+            self.prefixes = prefixes
+        }
     }
 
     pub fn add_prefix<T: Into<String>>(&mut self, prefix: T) {
         let prefix = prefix.into();
+
+        if prefix.is_empty() {
+            return;
+        }
+
         for p in &self.prefixes {
             if p == &prefix {
                 debug!("prefix '{}' already exists", prefix);
                 return;
             }
         }
-        debug!("prefix '{}' added", prefix);
+        info!("prefix '{}' added", prefix);
         self.prefixes.push(prefix)
     }
 
     pub fn set_comment_symbols(&mut self, comment_symbols: Vec<String>) {
-        self.comment_symbols = comment_symbols
+        if !comment_symbols.is_empty() {
+            self.comment_symbols = comment_symbols
+        }
     }
 
     pub fn add_comment_symbol<T: Into<String>>(&mut self, comment_symbol: T) {
         let comment_symbol = comment_symbol.into();
+
+        if comment_symbol.is_empty() {
+            return;
+        }
+
         for p in &self.comment_symbols {
             if p == &comment_symbol {
                 debug!("comment symbol '{}' already exists", comment_symbol);
                 return;
             }
         }
-        debug!("comment symbol '{}' added", comment_symbol);
+        info!("comment symbol '{}' added", comment_symbol);
         self.comment_symbols.push(comment_symbol)
     }
 
+    pub fn set_source_extensions(&mut self, source_extensions: Vec<String>) {
+        if !source_extensions.is_empty() {
+            self.source_extensions = source_extensions
+        }
+        self.remove_extensions_dots();
+    }
+
+    pub fn add_source_extension<T: Into<String>>(&mut self, source_extension: T) {
+        let source_extension = source_extension.into();
+
+        if source_extension.is_empty() {
+            return;
+        }
+
+        for p in &self.source_extensions {
+            if p == &source_extension {
+                debug!("comment symbol '{}' already exists", source_extension);
+                return;
+            }
+        }
+        info!("comment symbol '{}' added", source_extension);
+        self.source_extensions.push(source_extension);
+        self.remove_extensions_dots();
+    }
+
     pub fn set_outfile_name(&mut self, outfile_name: &str) {
-        debug!("set outfile name: {}", outfile_name);
         self.outfile_name = String::from(outfile_name);
+        info!("outfile name: {}", outfile_name);
     }
 
     pub fn set_outfile_format(&mut self, outfile_format: &str) {
-        debug!("set outfile type: {}", outfile_format);
-        self.outfile_format = FileFormat::from(outfile_format)
+        self.outfile_format = FileFormat::from(outfile_format);
+        info!("outfile type: {}", self.outfile_format.as_str());
     }
 
-    pub fn set_ignored(&mut self, ignored: Vec<String>) {
-        self.ignored = ignored
+    pub fn set_ignore(&mut self, ignored: Vec<String>) {
+        self.ignore = ignored
     }
 
-    pub fn add_ignored<T: Into<String>>(&mut self, ignore: T) {
+    pub fn add_ignore<T: Into<String>>(&mut self, ignore: T) {
         let i = ignore.into();
-        for p in &self.ignored {
+
+        if i.is_empty() {
+            return;
+        }
+
+        for p in &self.ignore {
             if p == &i {
                 debug!("ignore entry '{}' already exists", i);
                 return;
             }
         }
-        debug!("ignore entry '{}' added", i);
-        self.ignored.push(i)
+        info!("ignore entry '{}' added", i);
+        self.ignore.push(i)
     }
 
-    /// Checks if all neccesary TodoCollector struct fields are set properly
+    /// Checks if all necessary TodoCollector struct fields are set properly
     pub fn is_valid(&self) -> bool {
-        !(self.prefixes.is_empty() || self.comment_symbols.is_empty() || self.outfile_name.is_empty())
+        !(self.prefixes.is_empty()
+            || self.comment_symbols.is_empty()
+            || self.outfile_name.is_empty()
+            || self.source_extensions.is_empty())
     }
 
-    /// check if line contain any of prefixes, and if so prefix is removed from line
-    fn comment_to_send(&self, line: &str) -> Option<String> {
-        let mut cs = "";
-        for c in &self.comment_symbols {
-            if line.contains(c) {
-                cs = c;
-                break;
+    fn remove_extensions_dots(&mut self) {
+        self.source_extensions = self.source_extensions.iter().map(|e| e.replace(".", "")).collect()
+    }
+
+    fn files_to_check<P: AsRef<Path>>(&self, dir: P) -> Vec<PathBuf> {
+        let mut result = Vec::new();
+        let entry_iter = match dir.as_ref().read_dir() {
+            Ok(ei) => ei,
+            Err(err) => {
+                warn!("Can not read dir {:?}: {}", dir.as_ref(), err);
+                return result;
+            }
+        };
+
+        for entry in entry_iter {
+            let entry = match entry {
+                Ok(e) => e,
+                Err(_err) => continue,
+            };
+
+            let path = entry.path();
+            let mut skip = false;
+            for ign in &self.ignore {
+                if path.ends_with(ign) {
+                    skip = true;
+                    break;
+                }
+            }
+
+            if skip {
+                continue;
+            }
+
+            if path.is_dir() {
+                let r = self.files_to_check(&path);
+                result.extend(r);
+                continue;
+            }
+
+            let mut ext_ok = false;
+            for ext in &self.source_extensions {
+                if let Some(e) = path.extension().and_then(|e| e.to_str()) {
+                    if ext == e {
+                        ext_ok = true;
+                    }
+                }
+            }
+
+            if ext_ok {
+                result.push(path);
             }
         }
 
-        if cs.is_empty() {
-            return None;
-        }
+        result
+    }
 
-        for p in &self.prefixes {
-            if line.contains(p) {
-                debug!("Found comment {}", line);
-                let mut l = line.trim_start();
-                l = l.trim_start_matches(cs);
-                l = l.trim_start();
-                l = l.trim_start_matches(p);
-                l = l.trim_start_matches(':');
-                l = l.trim_start();
-
-                debug!("After trimming {}", l);
-                return Some(l.to_owned());
+    fn is_comment<'a>(&self, line: &'a str) -> Option<&'a str> {
+        let line = line.trim_start();
+        for cs in &self.comment_symbols {
+            if line.starts_with(cs) {
+                for p in &self.prefixes {
+                    let prefix = format!("{} {}:", cs, p);
+                    if let Some(pos) = line.find(&prefix) {
+                        let (_, comment) = line.split_at(pos + prefix.len());
+                        return Some(comment.trim_start());
+                    }
+                }
             }
         }
         None
     }
 
-    fn handle_file<P: AsRef<Path>>(&self, path: P, todofile: &Todofile) {
-        let file_path = PathBuf::from(path.as_ref());
-        let file_path_str = path_as_str!(file_path);
-        let file_name = file_path.file_name().unwrap_or_else(|| OsStr::new("")).to_str().unwrap_or("");
-
-        let file = match File::open(&file_path) {
-            Ok(f) => f,
-            Err(err) => {
-                error!("Can not open {}: {}", file_path_str, err);
-                return;
-            }
-        };
-
-        debug!("Handling file {}", file_path_str);
-        // TODO: skipping binary files
-        let reader = BufReader::new(file);
-
-        for (line_num, line) in reader.lines().enumerate() {
-            let line = match line {
-                Ok(l) => l,
-                Err(err) => {
-                    error!("Reading file {}: {}", file_path_str, err);
-                    break;
-                }
-            };
-
-            if let Some(l) = self.comment_to_send(&line) {
-                let comment = CommentLine::new(&l, file_name, line_num);
-                if let Err(err) = todofile.save_comment(comment) {
-                    error!("Writing '{}' comment failed: {}", l, err);
-                }
-            }
-        }
-    }
-
-    fn is_ignored(&self, path: &PathBuf) -> bool {
-        match path.file_name() {
-            Some(f) => match f.to_str() {
-                Some(n) => {
-                    for i in &self.ignored {
-                        if n == i {
-                            return true;
-                        }
-                    }
-                    false
-                }
-                None => false,
+    /// Chose dir to collect comments, this function prepares list of source files to check, creates path
+    /// to new todo collected file, removes old one if it exist, and sets project name
+    pub fn set_project_dir<P: AsRef<Path>>(&mut self, path: P) -> Result<(), SimpleError> {
+        let project_dir = path.as_ref();
+        let mut outfile_path = PathBuf::from(project_dir);
+        self.project_name = match outfile_path.file_name() {
+            Some(pn) => match pn.to_str() {
+                Some(n) => n.into(),
+                None => return Err(SimpleError::new("Parse OsStr to &str failed")),
             },
-            None => false,
-        }
-    }
-
-    fn handle_dir_entry(&self, entry: DirEntry, todofile: &Todofile) {
-        let entry_name = entry.file_name().into_string().unwrap_or_else(|_| "".to_string());
-        let entry_path = entry.path();
-        let entry_type = match entry.file_type() {
-            Ok(t) => t,
-            Err(err) => {
-                error!("Can not check type for {}, becouse: {}", path_as_str!(entry_path), err);
-                return;
-            }
+            None => return Err(SimpleError::new("Can not get project name from path")),
         };
 
-        if self.is_ignored(&entry_path) {
-            return;
-        }
+        outfile_path.push(&self.outfile_name);
+        outfile_path.set_extension(self.outfile_format.extension());
 
-        if entry_type.is_dir() {
-            debug!("Nestet dir in {:?}", entry);
-            self.dir_collect(entry_path, todofile);
-            return;
-        }
-
-        if entry_name.contains(&self.outfile_name) {
-            debug!("Skipping outfile {}", path_as_str!(entry_path));
-            return;
-        }
-
-        self.handle_file(entry_path, &todofile);
-    }
-
-    fn dir_collect<P: AsRef<Path>>(&self, dir: P, todofile: &Todofile) {
-        let dir = dir.as_ref();
-        let entry_iter = match dir.read_dir() {
-            Ok(ei) => ei,
-            Err(err) => {
-                error!("Reading dir {} failed: {}", path_as_str!(dir), err);
-                return;
-            }
+        let outfile_path_str = match outfile_path.to_str() {
+            Some(p) => p,
+            None => return Err(SimpleError::new("Can not parse outfile path to &str")),
         };
 
-        for e in entry_iter {
-            let entry = match e {
-                Ok(de) => de,
-                Err(_err) => continue,
-            };
+        info!("todo file: {}", outfile_path_str);
 
-            self.handle_dir_entry(entry, &todofile);
-        }
-    }
-
-    /// If Ok returns path to outfile  
-    fn project_dir_collect_internal<P: AsRef<Path>>(&self, dir: P) -> Result<PathBuf, Box<dyn std::error::Error>> {
-        let project_root = PathBuf::from(dir.as_ref());
-
-        let mut todofile_path = PathBuf::from(&project_root);
-        todofile_path.push(&self.outfile_name);
-
-        debug!("todofile: {}", path_as_str!(todofile_path));
-        let todofile = Todofile::new(&todofile_path, &self.outfile_format)?;
-
-        self.dir_collect(&project_root, &todofile);
-
-        Ok(todofile.path().to_owned())
-    }
-
-    /// Checks project source files to find proper comment and save it into output file
-    pub fn project_dir_collect(&self, dir: &str) -> Result<PathBuf, Box<dyn std::error::Error>> {
-        if !self.is_valid() {
-            error!("prefixes, comment symbols or outfile name not set");
-            return simple_error_result!("TodoCollector is not ready");
-        }
-        info!("collect in project {:?}", &dir);
-        let p = Path::new(dir);
-        self.project_dir_collect_internal(p)
-    }
-
-    /// Check workspace directory for subdirectories witch projects and collcect all project out files
-    /// into one out file witch all found comments.
-    pub fn workspace_dir_collect<P: AsRef<Path>>(&self, dir: P) -> Result<(), Box<dyn std::error::Error>> {
-        if !self.is_valid() {
-            error!("prefixes, comment symbols or outfile name not set");
-            return simple_error_result!("TodoCollector is not ready");
+        if outfile_path.exists() {
+            info!("Removing old todo file");
+            if let Err(err) = std::fs::remove_file(&outfile_path) {
+                warn!("Can not remove {}: {}", outfile_path_str, err)
+            }
         }
 
-        let ws_root = PathBuf::from(dir.as_ref());
-        info!("search in workspace: {:?}", path_as_str!(ws_root));
-
-        let mut created_files: Vec<PathBuf> = Vec::new();
-        let ws_entries = fs::read_dir(&ws_root)?;
-        // for p in ws_entries {
-        //     let project_dir = p?.path();
-        //     debug!("Project dir {:?}", project_dir);
-        //     match self.project_dir_collect_internal(&project_dir) {
-        //         Ok(f) => created_files.push(f),
-        //         Err(err) => error!("Can not collect in {} project, because: {}", path_as_str!(project_dir), err),
-        //     }
-        // }
-
-        let _workspace_todofile = todofiles_collector(&ws_root, &self.outfile_name, &self.outfile_format)?;
-
-        // TODO: Creating one big out file for all workspaces
+        self.source_files = self.files_to_check(path);
+        self.outfile = outfile_path;
 
         Ok(())
     }
-}
 
-impl Default for TodoCollector {
-    fn default() -> Self {
-        Self {
-            prefixes: vec![],
-            comment_symbols: vec![],
-            outfile_name: String::new(),
-            outfile_format: FileFormat::default(),
-            ignored: vec![],
+    /// Collects comments from source file list
+    pub fn collect_project(&mut self) {
+        info!("Collecting todo comments");
+
+        for source_file in &self.source_files {
+            let source_file_str = match source_file.to_str() {
+                Some(f) => f,
+                None => continue,
+            };
+
+            info!("Checking in {}", source_file_str);
+            let file = match File::open(&source_file) {
+                Ok(f) => f,
+                Err(err) => {
+                    error!("Can not open {}: {}", source_file_str, err);
+                    return;
+                }
+            };
+
+            let reader = BufReader::new(file);
+            for (line_num, line) in reader.lines().enumerate() {
+                let line = match line {
+                    Ok(l) => l,
+                    Err(err) => {
+                        error!("Reading line {} in file {}: {}", line_num, source_file_str, err);
+                        break;
+                    }
+                };
+
+                if let Some(comment_line) = self.is_comment(&line) {
+                    debug!("todo comment: {}", comment_line);
+                    self.comments.push(Comment::new(comment_line, source_file_str, line_num))
+                }
+            }
         }
     }
-}
 
-#[cfg(test)]
-mod tests {}
+    /// Saves collected comments to file and clear them if save were ok
+    pub fn save_comments(&mut self) -> std::io::Result<()> {
+        let mut file = File::create(&self.outfile)?;
+        let content = self.outfile_format.format_comments(&self.project_name, &self.comments);
+        file.write_all(&content.into_bytes()[..])?;
+        self.comments.clear();
+        Ok(())
+    }
+}

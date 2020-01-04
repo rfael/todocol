@@ -7,7 +7,12 @@ use clap::{App, Arg};
 use env_logger::Builder;
 use log::LevelFilter;
 use log::{debug, error, info, trace};
-use std::collections::HashMap;
+
+macro_rules! simple_error_result {
+    ($fmt:literal $(, $x:expr )*) => {{
+        Err(Box::new(simple_error::SimpleError::new(format!($fmt, $($x),*))))
+    }};
+}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let matches = App::new(crate_name!())
@@ -26,6 +31,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .short("c")
                 .long("config")
                 .help("config json file")
+                .default_value("$HOME/.config/todocol/settings.json")
                 .takes_value(true),
         )
         .arg(
@@ -37,25 +43,36 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .takes_value(true),
         )
         .arg(
-            Arg::with_name("type")
-                .short("t")
-                .long("type")
-                .help("output files type")
-                .possible_value("raw")
+            Arg::with_name("format")
+                .short("f")
+                .long("format")
+                .help("output files format")
+                .possible_value("txt")
                 .possible_value("markdown")
-                .possible_value("json")
-                .default_value("raw")
+                .default_value("txt")
                 .takes_value(true),
         )
         .subcommand(
-            App::new("onedir")
-                .about("collects comments in one specified project directory")
-                .arg(Arg::with_name("path").short("p").help("path to directory").index(1)),
+            App::new("project")
+                .about("Collects comments in one specified project directory")
+                .arg(
+                    Arg::with_name("path")
+                        .short("p")
+                        .help("Path to directory")
+                        .default_value("$PWD")
+                        .index(1),
+                ),
         )
         .subcommand(
             App::new("workspace")
-                .about("collects comments from all directories in one worspace")
-                .arg(Arg::with_name("path").short("p").help("path to directory").index(1)),
+                .about("Collects comments from all directories in one workspace")
+                .arg(
+                    Arg::with_name("path")
+                        .short("p")
+                        .help("Path to directory")
+                        .default_value("$PWD")
+                        .index(1),
+                ),
         )
         .get_matches();
 
@@ -71,42 +88,53 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // app settings
     let mut settings = config::Config::default();
-    let home_dir = match std::env::var("HOME") {
-        Ok(p) => format!("{}/workspace", p),
-        Err(_) => "/root".to_owned(),
-    };
-    settings.set_default("workspace", vec![home_dir]).unwrap();
     settings.set_default("prefix", vec!["TODO"]).unwrap();
     settings.set_default("comment_symbol", vec!["//"]).unwrap();
-    let outfile_name = matches.value_of("filename").unwrap_or("TODO");
-    let outfile_type = matches.value_of("type").unwrap_or("raw");
-    let mut outfile: HashMap<String, config::Value> = HashMap::new();
-    outfile.insert("name".to_string(), config::Value::new(None, outfile_name));
-    outfile.insert("type".to_string(), config::Value::new(None, outfile_type));
-    settings.set_default("outfile", outfile)?;
+    settings.set_default("outfile.name", "TODO").unwrap();
+    settings.set_default("outfile.format", "txt").unwrap();
 
-    // TDOD: separate config per workspace
+    let config_file = matches.value_of("config").unwrap_or("$HOME/.config/todocol/settings.json");
+    let config_file = app_core::swap_env(config_file);
+    info!("Config file: {}", config_file);
+    match settings.merge(config::File::with_name(&config_file)) {
+        Ok(_s) => info!("Config file: {}", config_file),
+        Err(e) => error!("{}", e),
+    }
 
-    if let Some(c) = matches.value_of("config") {
-        match settings.merge(config::File::with_name(c)) {
-            Ok(_s) => info!("Config file: {}", c),
-            Err(e) => error!("Config file {} not found: {:?}", c, e),
+    if matches.occurrences_of("format") == 1 {
+        if let Some(format) = matches.value_of("format") {
+            settings.set("outfile.format", format).unwrap();
         }
     }
+    if matches.occurrences_of("filename") == 1 {
+        if let Some(name) = matches.value_of("filename") {
+            settings.set("outfile.name", name).unwrap();
+        }
+    }
+
     trace!("App config:\n{:#?}", settings);
 
     match matches.subcommand_name() {
-        Some("onedir") => {
-            // TODO searching comments in one project directory
-            unimplemented!();
+        Some("project") => {
+            info!("Collecting todo for project");
+            if let Some(project_dir) = matches.subcommand_matches("project").and_then(|m| m.value_of("path")) {
+                app_core::run_app_project(&settings, project_dir)
+            } else {
+                simple_error_result!("Invalid argument")
+            }
         }
         Some("workspace") => {
-            // TODO searching comments in one workspace directory
-            unimplemented!();
+            info!("Collecting todo for workspace");
+            if let Some(workspace_dir) = matches.subcommand_matches("workspace").and_then(|m| m.value_of("path")) {
+                app_core::run_app_workspace(&settings, workspace_dir)
+            } else {
+                simple_error_result!("Invalid argument")
+            }
         }
         Some(_) => unreachable!(),
-        None => info!("No subcommand used"),
-    };
-
-    app_core::run_app(&settings)
+        None => {
+            info!("Collecting todo in all workspaces");
+            app_core::run_app(&settings)
+        }
+    }
 }
