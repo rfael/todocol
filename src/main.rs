@@ -131,10 +131,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 simple_error_result!("Invalid argument")
             }
         }
-        Some(_) => unreachable!(),
-        None => {
+        Some("workspaces") => {
             info!("Collecting todo in all workspaces");
-            app_core::run_app(&settings)
+            app_core::run_app_workspaces(&settings)
+        }
+        _ => {
+            eprintln!("{}", matches.usage());
+            Ok(())
         }
     }
 }

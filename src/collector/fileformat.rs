@@ -45,6 +45,7 @@ impl FileFormat {
         let mut result = format!("### {}\n", header);
 
         for c in comments {
+            // TODO: prepare format for github
             let comment_line = if let Some(pos) = c.source().find(header) {
                 let (_, relative_path) = c.source().split_at(pos);
                 format!("* [{}]({}):{} - {} \n", relative_path, c.source(), c.line_num(), c.content())

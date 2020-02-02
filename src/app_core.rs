@@ -114,8 +114,8 @@ pub fn run_app_workspace(config: &Config, workspace_dir: &str) -> Result<(), Box
     Ok(())
 }
 
-pub fn run_app(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
-    let mut workspaces = config.get::<Vec<String>>("workspace")?;
+pub fn run_app_workspaces(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
+    let mut workspaces = config.get::<Vec<String>>("workspaces")?;
     workspaces = workspaces.iter().map(|w| swap_env(w)).filter(|w| !w.is_empty()).collect();
     debug!("workspaces: {:#?}", workspaces);
 
