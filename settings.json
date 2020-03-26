@@ -1,28 +1,9 @@
 {
-    "workspaces": [
-        "$HOME/workspace/rust"
-    ],
-    "prefix": [
-        "TODO",
-        "FIXME"
-    ],
-    "comment_symbol": [
-        "//",
-        "#"
-    ],
-    "source_extension": [
-        ".c",
-        ".sh",
-        ".py",
-        ".rs"
-    ],
-    "outfile.name": "TODO",
-    "outfile.format": "markdown",
-    "ignore": [
-        "target",
-        "output",
-        "build",
-        "settings.json",
-        "collector.old"
-    ]
+  "workspaces": [],
+  "prefix": ["TODO", "FIXME"],
+  "comment_symbol": ["//", "#"],
+  "source_extension": [".c", ".sh", ".py", ".rs"],
+  "outfile.name": "TODO",
+  "outfile.format": "txt",
+  "ignore": ["target", "output", "build", "settings.json", "collector.old"]
 }

@@ -124,9 +124,7 @@ impl TodoCollector {
         info!("outfile type: {}", self.outfile_format.as_str());
     }
 
-    pub fn set_ignore(&mut self, ignored: Vec<String>) {
-        self.ignore = ignored
-    }
+    pub fn set_ignore(&mut self, ignored: Vec<String>) { self.ignore = ignored }
 
     pub fn add_ignore<T: Into<String>>(&mut self, ignore: T) {
         let i = ignore.into();

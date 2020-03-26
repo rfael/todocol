@@ -14,17 +14,11 @@ impl Comment {
         }
     }
 
-    pub fn content(&self) -> &str {
-        &self.content
-    }
+    pub fn content(&self) -> &str { &self.content }
 
-    pub fn source(&self) -> &str {
-        &self.source
-    }
+    pub fn source(&self) -> &str { &self.source }
 
-    pub fn line_num(&self) -> usize {
-        self.line_num
-    }
+    pub fn line_num(&self) -> usize { self.line_num }
 }
 
 #[cfg(test)]

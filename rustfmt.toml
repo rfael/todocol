@@ -1,0 +1,23 @@
+# All config options can be found here:
+# https://github.com/rust-lang/rustfmt/blob/master/Configurations.md
+
+# Maximum width of each line
+# Default value: 100
+max_width = 128
+
+# Control the layout of arguments in a function
+# Possible values: "Compressed", "Tall", "Vertical"
+fn_args_layout = "Compressed"
+
+# Put single-expression functions on a single line
+# Default value: false
+fn_single_line = true
+
+# Merge multiple imports into a single nested import.
+# Default value: false
+merge_imports = false
+
+# Report TODO items in comments.
+# Default value: "Never"
+# Possible values: "Always", "Unnumbered", "Never"
+report_todo = "Never"

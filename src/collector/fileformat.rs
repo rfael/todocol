@@ -42,7 +42,7 @@ impl FileFormat {
     }
 
     fn format_comments_markdown(header: &str, comments: &[Comment]) -> String {
-        let mut result = format!("### {}\n", header);
+        let mut result = format!("# {}\n\n", header);
 
         for c in comments {
             // TODO: prepare format for github
@@ -60,9 +60,7 @@ impl FileFormat {
 }
 
 impl Default for FileFormat {
-    fn default() -> Self {
-        Self::Raw
-    }
+    fn default() -> Self { Self::Raw }
 }
 
 impl From<&str> for FileFormat {
