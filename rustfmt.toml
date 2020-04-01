@@ -1,9 +1,75 @@
 # All config options can be found here:
 # https://github.com/rust-lang/rustfmt/blob/master/Configurations.md
 
-# Maximum width of each line
-# Default value: 100
-max_width = 128
+# Where to put a binary operator when a binary expression goes multiline.
+# Default value: "Front"
+# Possible values: "Front", "Back"
+binop_separator = "Front"
+
+# Minimum number of blank lines which must be put between items. If two items have fewer blank lines between them, additional blank lines are inserted.
+# Default value: 0
+# Possible values: unsigned integer
+blank_lines_lower_bound = 0
+
+# Maximum number of blank lines which can be put between items. If more than this number of consecutive empty lines are found, they are trimmed down to match this integer.
+# Default value: 1
+# Possible values: any non-negative integer
+blank_lines_upper_bound = 1
+
+# Brace style for items
+# Default value: "SameLineWhere"
+# Possible values: "AlwaysNextLine", "PreferSameLine", "SameLineWhere"
+brace_style = "PreferSameLine"
+
+# Whether to use colored output or not.
+# Default value: "Auto"
+# Possible values: "Auto", "Always", "Never"
+color = "Auto"
+
+# Combine control expressions with function calls.
+# Default value: true
+# Possible values: true, false
+combine_control_expr = false
+
+# Maximum length of comments. No effect unlesswrap_comments = true.
+# Default value: 80
+# Possible values: any positive integer
+comment_width = 100
+
+# Replace strings of _ wildcards by a single .. in tuple patterns
+# Default value: false
+# Possible values: true, false
+condense_wildcard_suffixes = true
+
+# Brace style for control flow constructs
+# Default value: "AlwaysSameLine"
+# Possible values: "AlwaysNextLine", "AlwaysSameLine", "ClosingNextLine"
+control_brace_style = "AlwaysSameLine"
+
+# Don't reformat anything
+# Default value: false
+# Possible values: true, false
+disable_all_formatting = false
+
+# Specifies which edition is used by the parser.
+# Default value: 2015
+# Possible values: 2015, 2018
+edition = "2018"
+
+# Put empty-body functions and impls on a single line
+# Default value: true
+# Possible values: true, false
+empty_item_single_line = true
+
+# Indent on expressions or items.
+# Default value: "Block"
+# Possible values: "Block", "Visual"
+indent_style = "Block"
+
+# Error if unable to get comments or string literals within max_width, or they are left with trailing whitespaces.
+# Default value: false
+# Possible values: true, false
+# error_on_unformatted = false
 
 # Control the layout of arguments in a function
 # Possible values: "Compressed", "Tall", "Vertical"
@@ -13,11 +79,119 @@ fn_args_layout = "Compressed"
 # Default value: false
 fn_single_line = true
 
+# Force multiline closure and match arm bodies to be wrapped in a block
+# Default value: false
+# Possible values: false, true
+force_multiline_blocks = true
+
+# Format string literals where necessary
+# Default value: false
+# Possible values: true, false
+format_strings = true
+
+# Use tab characters for indentation, spaces for alignment
+# Default value: false
+# Possible values: true, false
+hard_tabs = false
+
+# Wrap the body of arms in blocks when it does not fit on the same line with the pattern of arms
+# Default value: true
+# Possible values: true, false
+match_arm_blocks = false
+
+# Put a trailing comma after a block based match arm (non-block arms are not affected)
+# Default value: false
+# Possible values: true, false
+match_block_trailing_comma = false
+
+# Maximum width of each line
+# Default value: 100
+# Possible values: any positive integer
+max_width = 128
+
+# Merge multiple derives into a single one.
+# Default value: true
+# Possible values: true, false
+merge_derives = true
+
 # Merge multiple imports into a single nested import.
 # Default value: false
 merge_imports = false
+
+# Convert /* */ comments to // comments where possible
+# Default value: false
+# Possible values: true, false
+normalize_comments = true
+
+# Reorder impl items. 'type' and 'const' are put first, then macros and methods.
+# Default value: false
+# Possible values: true, false
+reorder_impl_items = true
 
 # Report TODO items in comments.
 # Default value: "Never"
 # Possible values: "Always", "Unnumbered", "Never"
 report_todo = "Never"
+
+# The maximum diff of width between struct fields to be aligned with each other.
+# Default value : 0
+# Possible values: any non-negative integer
+struct_field_align_threshold = 30
+
+# Number of spaces per tab
+# Default value: 4
+# Possible values: any positive integer
+tab_spaces = 4
+
+# Add trailing semicolon after break, continue and return
+# Default value: true
+# Possible values: true, false
+trailing_semicolon = false
+
+# Enable unstable features on the unstable channel.
+# Default value: false
+# Possible values: true, false
+unstable_features = true
+
+# Break comments to fit on the line
+# Default value: false
+# Possible values: true, false
+wrap_comments = false
+
+#
+newline_style = "Auto"
+use_small_heuristics = "Default"
+format_code_in_doc_comments = false
+normalize_doc_attributes = false
+license_template_path = ""
+format_macro_matchers = false
+format_macro_bodies = true
+struct_lit_single_line = true
+where_single_line = false
+imports_indent = "Block"
+imports_layout = "Mixed"
+reorder_imports = true
+reorder_modules = true
+type_punctuation_density = "Wide"
+space_before_colon = false
+space_after_colon = true
+spaces_around_ranges = false
+remove_nested_parens = true
+overflow_delimited_expr = false
+enum_discrim_align_threshold = 0
+trailing_comma = "Vertical"
+version = "One"
+inline_attribute_width = 0
+use_try_shorthand = false
+use_field_init_shorthand = false
+force_explicit_abi = true
+required_version = "1.4.12"
+skip_children = false
+hide_parse_errors = false
+error_on_line_overflow = false
+error_on_unformatted = false
+report_fixme = "Never"
+ignore = []
+emit_mode = "Files"
+make_backup = false
+#

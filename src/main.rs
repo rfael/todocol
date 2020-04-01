@@ -1,20 +1,14 @@
 #[macro_use]
 extern crate clap;
 
-mod app_core;
+mod todocol_app;
 
 use clap::{App, Arg};
 use env_logger::Builder;
 use log::LevelFilter;
 use log::{debug, error, info, trace};
 
-macro_rules! simple_error_result {
-    ($fmt:literal $(, $x:expr )*) => {{
-        Err(Box::new(simple_error::SimpleError::new(format!($fmt, $($x),*))))
-    }};
-}
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> anyhow::Result<()> {
     let matches = App::new(crate_name!())
         .version(crate_version!())
         .author(crate_authors!())
@@ -94,7 +88,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     settings.set_default("outfile.format", "txt").unwrap();
 
     let config_file = matches.value_of("config").unwrap_or("$HOME/.config/todocol/settings.json");
-    let config_file = app_core::swap_env(config_file);
+    let config_file = todocol_app::swap_env(config_file);
     info!("Config file: {}", config_file);
     match settings.merge(config::File::with_name(&config_file)) {
         Ok(_s) => info!("Config file: {}", config_file),
@@ -118,22 +112,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some("project") => {
             info!("Collecting todo for project");
             if let Some(project_dir) = matches.subcommand_matches("project").and_then(|m| m.value_of("path")) {
-                app_core::run_app_project(&settings, project_dir)
+                todocol_app::run_app_project(&settings, project_dir)
             } else {
-                simple_error_result!("Invalid argument")
+                Err(anyhow::anyhow!("Invalid argument"))
             }
         }
         Some("workspace") => {
             info!("Collecting todo for workspace");
             if let Some(workspace_dir) = matches.subcommand_matches("workspace").and_then(|m| m.value_of("path")) {
-                app_core::run_app_workspace(&settings, workspace_dir)
+                todocol_app::run_app_workspace(&settings, workspace_dir)
             } else {
-                simple_error_result!("Invalid argument")
+                Err(anyhow::anyhow!("Invalid argument"))
             }
         }
         Some("workspaces") => {
             info!("Collecting todo in all workspaces");
-            app_core::run_app_workspaces(&settings)
+            todocol_app::run_app_workspaces(&settings)
         }
         _ => {
             eprintln!("{}", matches.usage());

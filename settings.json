@@ -1,8 +1,6 @@
 {
   "workspaces": [],
   "prefix": ["TODO", "FIXME"],
-  "comment_symbol": ["//", "#"],
-  "source_extension": [".c", ".sh", ".py", ".rs"],
   "outfile.name": "TODO",
   "outfile.format": "txt",
   "ignore": ["target", "output", "build", "settings.json", "collector.old"]
