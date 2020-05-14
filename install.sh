@@ -14,6 +14,8 @@ main() {
     mkdir -p $CONFIG_DIR
 
     cp -v $MY_DIR/settings.json $CONFIG_DIR/settings.json
+
+    # TODO: add option for installing zsh completion for todocol
 }
 
 main

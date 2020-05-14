@@ -1,12 +1,11 @@
-#[macro_use]
-extern crate clap;
-
 mod todocol_app;
 
-use clap::{App, Arg};
+use clap::*;
 use env_logger::Builder;
 use log::LevelFilter;
 use log::{debug, error, info, trace};
+
+// TODO: Add github travis CI for testing and build
 
 fn main() -> anyhow::Result<()> {
     let matches = App::new(crate_name!())
@@ -70,6 +69,8 @@ fn main() -> anyhow::Result<()> {
         )
         .get_matches();
 
+    // TODO: generate zsh completion
+
     // verbosity
     let level_filter = match matches.occurrences_of("verbose") {
         0 => LevelFilter::Warn,
@@ -87,12 +88,14 @@ fn main() -> anyhow::Result<()> {
     settings.set_default("outfile.name", "TODO").unwrap();
     settings.set_default("outfile.format", "txt").unwrap();
 
+    // TODO: default config in project dir ex: .todocol.json
+
     let config_file = matches.value_of("config").unwrap_or("$HOME/.config/todocol/settings.json");
     let config_file = todocol_app::swap_env(config_file);
     info!("Config file: {}", config_file);
-    match settings.merge(config::File::with_name(&config_file)) {
-        Ok(_s) => info!("Config file: {}", config_file),
-        Err(e) => error!("{}", e),
+
+    if let Err(err) = settings.merge(config::File::with_name(&config_file)) {
+        error!("Loading settings from file failed: {}", err)
     }
 
     if matches.occurrences_of("format") == 1 {

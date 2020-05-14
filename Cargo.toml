@@ -5,6 +5,12 @@ authors = ["Rafal Ulko <rafal.ulko@gmail.com>"]
 edition = "2018"
 description = "App to collecting 'TODO:' (or other) comments from project source files into one file"
 
+[profile.release]
+lto = true
+opt-level = 3
+codegen-units = 1
+debug = false
+
 [dependencies]
 log = "0.4.8"
 env_logger = "0.7.1"
