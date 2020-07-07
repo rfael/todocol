@@ -1,6 +1,6 @@
 [package]
 name = "todocol"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Rafal Ulko <rafal.ulko@gmail.com>"]
 edition = "2018"
 description = "App to collecting 'TODO:' (or other) comments from project source files into one file"
@@ -14,7 +14,7 @@ debug = false
 [dependencies]
 log = "0.4.8"
 env_logger = "0.7.1"
-clap = "2.33.0"
+clap = "2.33.1"
 config = "0.10.1"
 shellexpand = "2.0.0"
-anyhow = "1.0.28"
+anyhow = "1.0.31"

@@ -22,8 +22,9 @@ pub struct TodoCollector {
     ignore:        Vec<String>,
     result_name:   String,
     result_format: FileFormat,
-    projects:      Vec<Project>,
 }
+
+// TODO: add TodoCollectorBuilder struct
 
 impl TodoCollector {
     pub fn new() -> Self {
@@ -32,7 +33,6 @@ impl TodoCollector {
             ignore:        Vec::new(),
             result_name:   String::from("TODO"),
             result_format: FileFormat::default(),
-            projects:      Vec::new(),
         }
     }
 
@@ -137,18 +137,6 @@ impl TodoCollector {
         result
     }
 
-    fn get_project_name<P: AsRef<Path>>(&self, project_dir: P) -> anyhow::Result<String> {
-        let project_name = project_dir
-            .as_ref()
-            .file_name()
-            .and_then(|n| n.to_str())
-            .ok_or_else(|| anyhow!("Can not get project name from path"))?;
-
-        info!("Project name: {}", project_name);
-
-        Ok(project_name.to_owned())
-    }
-
     fn get_result_file_path<P: AsRef<Path>>(&self, project_dir: P) -> anyhow::Result<PathBuf> {
         let mut path = PathBuf::from(project_dir.as_ref());
 
@@ -193,12 +181,17 @@ impl TodoCollector {
 
     pub fn collect_from_project<P: AsRef<Path>>(&mut self, path: P) -> anyhow::Result<()> {
         let project_dir = PathBuf::from(path.as_ref());
-
-        let project_name = self.get_project_name(&project_dir)?;
+        let project_name = project_dir
+            .file_name()
+            .map(|pn| pn.to_string_lossy())
+            .ok_or_else(|| anyhow!("Can not get project name from path"))?;
         let result_file_path = self.get_result_file_path(&project_dir)?;
-        let source_files = self.get_source_files(project_dir);
+        let source_files = self.get_source_files(&project_dir);
         let mut comments = Vec::new();
 
+        info!("project name: {}", project_name);
+
+        // TODO: use rayon to concurrent collecting
         for source_file in source_files {
             if let Ok(c) = source_file.get_comments() {
                 let mut c = self.comments_filter(c);
@@ -219,13 +212,4 @@ impl TodoCollector {
 
         Ok(())
     }
-
-    // pub fn save_comments(&mut self) {
-    //     self.projects.iter().for_each(|p| {
-    //         p.remove_old_result_file();
-    //         if let Err(err) = p.save_result_file(&self.result_format) {
-    //             error!("Saving result file for project \"{}\" failed", p.name)
-    //         }
-    //     })
-    // }
 }

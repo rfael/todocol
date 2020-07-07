@@ -2,6 +2,8 @@ use log::warn;
 
 use super::Comment;
 
+// TODO: add json and csv format
+
 #[derive(Debug, PartialEq)]
 pub enum FileFormat {
     Raw,

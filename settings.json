@@ -1,5 +1,4 @@
 {
-  "workspaces": [],
   "prefix": ["TODO", "FIXME"],
   "outfile.name": "TODO",
   "outfile.format": "txt",

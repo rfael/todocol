@@ -1,16 +1,16 @@
 use log::{info, warn};
-use std::{fs::File, io::prelude::*, path::PathBuf};
+use std::{borrow::Cow, fs::File, io::prelude::*, path::PathBuf};
 
 use super::{comment::Comment, fileformat::FileFormat};
 
 #[derive(Debug)]
-pub struct Project {
-    pub name:        String,
+pub struct Project<'a> {
+    pub name:        Cow<'a, str>,
     pub result_file: PathBuf,
     pub comments:    Vec<Comment>,
 }
 
-impl Project {
+impl<'a> Project<'a> {
     pub fn remove_old_result_file(&self) {
         if self.result_file.exists() {
             info!("Removing old result file");

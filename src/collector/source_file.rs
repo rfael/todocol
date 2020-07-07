@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use log::{error, info};
+use log::{debug, error};
 use std::{
     convert::TryFrom,
     fmt,
@@ -42,7 +42,7 @@ impl SourceFile {
 
     pub fn get_comments(&self) -> anyhow::Result<Vec<Comment>> {
         let mut comments: Vec<Comment> = Vec::new();
-        info!("Searching for comment lines in: {}", self.path_str);
+        debug!("Searching for comment lines in: {}", self.path_str);
         let file = File::open(&self.path)?;
         let reader = BufReader::new(file);
 

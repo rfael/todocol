@@ -1,12 +1,13 @@
-mod todocol_app;
+mod app;
 
 use clap::*;
 use env_logger::Builder;
-use log::{debug, error, info, trace, LevelFilter};
+use log::{debug, error, info, LevelFilter};
 
 // TODO: Add github travis CI for testing and build
 
 fn main() -> anyhow::Result<()> {
+    // TODO: use strcut witch Clap derive
     let matches = App::new(crate_name!())
         .version(crate_version!())
         .author(crate_authors!())
@@ -44,28 +45,6 @@ fn main() -> anyhow::Result<()> {
                 .default_value("txt")
                 .takes_value(true),
         )
-        .subcommand(
-            App::new("project")
-                .about("Collects comments in one specified project directory")
-                .arg(
-                    Arg::with_name("path")
-                        .short("p")
-                        .help("Path to directory")
-                        .default_value("$PWD")
-                        .index(1),
-                ),
-        )
-        .subcommand(
-            App::new("workspace")
-                .about("Collects comments from all directories in one workspace")
-                .arg(
-                    Arg::with_name("path")
-                        .short("p")
-                        .help("Path to directory")
-                        .default_value("$PWD")
-                        .index(1),
-                ),
-        )
         .get_matches();
 
     // TODO: generate zsh completion
@@ -87,10 +66,10 @@ fn main() -> anyhow::Result<()> {
     settings.set_default("outfile.name", "TODO").unwrap();
     settings.set_default("outfile.format", "txt").unwrap();
 
-    // TODO: default config in project dir ex: .todocol.json
+    // // TODO: default config in project dir ex: .todocol.json
 
     let config_file = matches.value_of("config").unwrap_or("$HOME/.config/todocol/settings.json");
-    let config_file = todocol_app::swap_env(config_file);
+    let config_file = shellexpand::env(config_file)?;
     info!("Config file: {}", config_file);
 
     if let Err(err) = settings.merge(config::File::with_name(&config_file)) {
@@ -102,38 +81,15 @@ fn main() -> anyhow::Result<()> {
             settings.set("outfile.format", format).unwrap();
         }
     }
+
     if matches.occurrences_of("filename") == 1 {
         if let Some(name) = matches.value_of("filename") {
             settings.set("outfile.name", name).unwrap();
         }
     }
 
-    trace!("App config:\n{:#?}", settings);
+    // TODO: use positional argument to set project dir
 
-    match matches.subcommand_name() {
-        Some("project") => {
-            info!("Collecting todo for project");
-            if let Some(project_dir) = matches.subcommand_matches("project").and_then(|m| m.value_of("path")) {
-                todocol_app::run_app_project(&settings, project_dir)
-            } else {
-                Err(anyhow::anyhow!("Invalid argument"))
-            }
-        }
-        Some("workspace") => {
-            info!("Collecting todo for workspace");
-            if let Some(workspace_dir) = matches.subcommand_matches("workspace").and_then(|m| m.value_of("path")) {
-                todocol_app::run_app_workspace(&settings, workspace_dir)
-            } else {
-                Err(anyhow::anyhow!("Invalid argument"))
-            }
-        }
-        Some("workspaces") => {
-            info!("Collecting todo in all workspaces");
-            todocol_app::run_app_workspaces(&settings)
-        }
-        _ => {
-            eprintln!("{}", matches.usage());
-            Ok(())
-        }
-    }
+    let pwd = shellexpand::env("$PWD")?;
+    app::run(settings, &pwd)
 }
