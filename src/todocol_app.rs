@@ -1,7 +1,6 @@
 use config::Config;
 use log::{debug, error, warn};
-use std::path::PathBuf;
-use std::str::FromStr;
+use std::{path::PathBuf, str::FromStr};
 
 use todocol::TodoCollector;
 

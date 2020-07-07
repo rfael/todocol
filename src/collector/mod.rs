@@ -5,8 +5,10 @@ mod source_file;
 
 use anyhow::anyhow;
 use log::{debug, error, info, warn};
-use std::convert::TryFrom;
-use std::path::{Path, PathBuf};
+use std::{
+    convert::TryFrom,
+    path::{Path, PathBuf},
+};
 
 use project::Project;
 use source_file::SourceFile;
@@ -71,7 +73,9 @@ impl TodoCollector {
         info!("Result file type: {}", self.result_format.as_str());
     }
 
-    pub fn set_ignore(&mut self, ignored: Vec<String>) { self.ignore = ignored }
+    pub fn set_ignore(&mut self, ignored: Vec<String>) {
+        self.ignore = ignored
+    }
 
     pub fn add_ignore<T: Into<String>>(&mut self, ignore: T) {
         let i = ignore.into();

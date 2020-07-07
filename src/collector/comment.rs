@@ -14,11 +14,17 @@ impl Comment {
         }
     }
 
-    pub fn content(&self) -> &str { &self.content }
+    pub fn content(&self) -> &str {
+        &self.content
+    }
 
-    pub fn source(&self) -> &str { &self.source }
+    pub fn source(&self) -> &str {
+        &self.source
+    }
 
-    pub fn line_num(&self) -> u32 { self.line_num }
+    pub fn line_num(&self) -> u32 {
+        self.line_num
+    }
 
     pub fn content_append(&mut self, line: &str) {
         self.content.push(' ');

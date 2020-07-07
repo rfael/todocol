@@ -2,8 +2,7 @@ mod todocol_app;
 
 use clap::*;
 use env_logger::Builder;
-use log::LevelFilter;
-use log::{debug, error, info, trace};
+use log::{debug, error, info, trace, LevelFilter};
 
 // TODO: Add github travis CI for testing and build
 

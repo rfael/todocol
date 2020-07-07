@@ -1,11 +1,12 @@
 use anyhow::anyhow;
 use log::{error, info};
-use std::convert::TryFrom;
-use std::fmt;
-use std::fs::File;
-use std::io::prelude::*;
-use std::io::BufReader;
-use std::path::{Path, PathBuf};
+use std::{
+    convert::TryFrom,
+    fmt,
+    fs::File,
+    io::{prelude::*, BufReader},
+    path::{Path, PathBuf},
+};
 
 use super::Comment;
 
@@ -35,7 +36,9 @@ impl SourceFileType {
 }
 
 impl SourceFile {
-    fn is_comment<'a>(&self, line: &'a str) -> bool { line.starts_with(self.source_type.comment_symbol()) }
+    fn is_comment<'a>(&self, line: &'a str) -> bool {
+        line.starts_with(self.source_type.comment_symbol())
+    }
 
     pub fn get_comments(&self) -> anyhow::Result<Vec<Comment>> {
         let mut comments: Vec<Comment> = Vec::new();
@@ -108,7 +111,9 @@ impl TryFrom<&Path> for SourceFileType {
 }
 
 impl fmt::Display for SourceFile {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result { write!(f, "{}", self.path_str) }
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.path_str)
+    }
 }
 
 #[cfg(test)]

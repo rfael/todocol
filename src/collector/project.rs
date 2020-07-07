@@ -1,10 +1,7 @@
 use log::{info, warn};
-use std::fs::File;
-use std::io::prelude::*;
-use std::path::PathBuf;
+use std::{fs::File, io::prelude::*, path::PathBuf};
 
-use super::comment::Comment;
-use super::fileformat::FileFormat;
+use super::{comment::Comment, fileformat::FileFormat};
 
 #[derive(Debug)]
 pub struct Project {

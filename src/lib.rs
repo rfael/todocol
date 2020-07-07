@@ -1,4 +1,3 @@
 mod collector;
 
-pub use collector::FileFormat;
-pub use collector::TodoCollector;
+pub use collector::{FileFormat, TodoCollector};

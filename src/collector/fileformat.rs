@@ -60,7 +60,9 @@ impl FileFormat {
 }
 
 impl Default for FileFormat {
-    fn default() -> Self { Self::Raw }
+    fn default() -> Self {
+        Self::Raw
+    }
 }
 
 impl From<&str> for FileFormat {
