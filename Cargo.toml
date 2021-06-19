@@ -12,9 +12,9 @@ codegen-units = 1
 debug = false
 
 [dependencies]
-log = "0.4.8"
-env_logger = "0.7.1"
-clap = "2.33.1"
-config = "0.10.1"
-shellexpand = "2.0.0"
-anyhow = "1.0.31"
+log = "0.4.14"
+env_logger = "0.8.4"
+clap = "2.33.3"
+config = "0.11.0"
+shellexpand = "2.1.0"
+anyhow = "1.0.41"

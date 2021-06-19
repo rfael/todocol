@@ -22,7 +22,6 @@ pub enum SourceFileType {
 #[derive(Debug, PartialEq)]
 pub struct SourceFile {
     path:        PathBuf,
-    path_str:    String,
     source_type: SourceFileType,
 }
 
@@ -42,7 +41,7 @@ impl SourceFile {
 
     pub fn get_comments(&self) -> anyhow::Result<Vec<Comment>> {
         let mut comments: Vec<Comment> = Vec::new();
-        debug!("Searching for comment lines in: {}", self.path_str);
+        debug!("Searching for comment lines in: {}", self.path.display());
         let file = File::open(&self.path)?;
         let reader = BufReader::new(file);
 
@@ -50,7 +49,7 @@ impl SourceFile {
             let line = match line {
                 Ok(l) => l,
                 Err(err) => {
-                    error!("Reading line {} in file {}: {}", line_num, self.path_str, err);
+                    error!("Reading line {} in file {}: {}", line_num, self.path.display(), err);
                     break
                 }
             };
@@ -61,8 +60,8 @@ impl SourceFile {
             }
 
             let line = line.trim_start_matches(self.source_type.comment_symbol()).trim_start();
-
-            let comment = Comment::new(line, &self.path_str, (line_num + 1) as u32);
+            let path_str = self.path.to_str().ok_or_else(|| anyhow!("Parsing path to String failed"))?;
+            let comment = Comment::new(line, &path_str, (line_num + 1) as u32);
             comments.push(comment);
         }
 
@@ -75,13 +74,8 @@ impl TryFrom<PathBuf> for SourceFile {
 
     fn try_from(path: PathBuf) -> Result<Self, Self::Error> {
         let source_type = SourceFileType::try_from(path.as_ref())?;
-        let path_str = path.to_str().ok_or_else(|| anyhow!("Parsing path to String failed"))?;
-        let path_str = path_str.to_owned();
-        Ok(Self {
-            path,
-            path_str,
-            source_type,
-        })
+
+        Ok(Self { path, source_type })
     }
 }
 
@@ -112,7 +106,7 @@ impl TryFrom<&Path> for SourceFileType {
 
 impl fmt::Display for SourceFile {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.path_str)
+        write!(f, "{}", self.path.display())
     }
 }
 
@@ -126,7 +120,6 @@ mod tests {
         let path = PathBuf::from(p);
         let expected = SourceFile {
             path:        path.clone(),
-            path_str:    p.to_owned(),
             source_type: SourceFileType::Rust,
         };
 
